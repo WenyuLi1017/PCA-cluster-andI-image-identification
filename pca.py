@@ -228,3 +228,21 @@ rebuild_400 = np.dot(transform_each_400, components_eigen_400)
 plt.imshow(rebuild_400[sample_indx,:].reshape(64,64), cmap=plt.cm.gray, interpolation='nearest')
 
 print ('explained variance ratio when 400 eigenface is ' , sum(pca.explained_variance_ratio_))
+
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+X_train,X_test,y_train,y_test=train_test_split(x,face.target,test_size = 0.2, random_state=0)
+components_pca=pd.DataFrame(columns=["n_components","knn_score"])
+for i in range(320):
+    pca=PCA(n_components=i+1,random_state=0).fit(X_train)
+    X_train_pca=pca.transform(X_train)
+    X_test_pca=pca.transform(X_test)   
+    knn=KNeighborsClassifier(n_neighbors=10)
+    knn.fit(X_train_pca,y_train)
+    knn_predict=knn.predict(X_test_pca)
+    components_pca=components_pca.append([{"n_components":i+1,"knn_score":accuracy_score(y_test,knn_predict)}], ignore_index=True)
+plt.plot(components_pca["n_components"],components_pca["knn_score"], label = 'knn score')
+
+components_pca[components_pca['knn_score']==components_pca['knn_score'].max()]
+
