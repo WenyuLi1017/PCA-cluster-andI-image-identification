@@ -11,17 +11,24 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from sklearn.decomposition import PCA
+from sklearn.metrics import zero_one_loss
+from sklearn.cluster import KMeans
+
+from sklearn.preprocessing import scale
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+
 """PCA and K-means cluster"""
 
 #using breast cancer data from sklearn dataset
 from sklearn.datasets import load_breast_cancer
-from sklearn.decomposition import PCA
 cancer = load_breast_cancer()
 cancer.data.shape
 
 scaled_features = scale(features)
 
-# Commented out IPython magic to ensure Python compatibility.
 #pca to 2 dimensions
 pca = PCA()
 pca.fit(scaled_features)
@@ -32,13 +39,9 @@ plt.ylim((0,1))
 plt.grid(True)
 plt.show()
 print("The first two principle components explain %s fraction of the total variance"
-#       % var_explained[1])
 print(var_explained[:9])
 
 #K-Means cluster
-from sklearn.metrics import zero_one_loss
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import scale
 
 X = pca.transform(scaled_features)
 km = KMeans(n_clusters=2, random_state=0).fit(X)
@@ -59,11 +62,10 @@ plt.title('True clusters')
 plt.scatter(X[:,0],X[:,1],c=cancer.target)
 plt.show()
 
-"""PCA for image compression"""
+"""PCA for image compression and image identification"""
 
 # using fetch_olivetti_faces image from sklearn dataset
 from sklearn.datasets import fetch_olivetti_faces
-from sklearn.decomposition import PCA
 face = fetch_olivetti_faces()
 print(face.keys())
 face_data = face['data']
@@ -187,7 +189,7 @@ plt.imshow(face.data[sample_indx,:].reshape(64,64), cmap=plt.cm.gray, interpolat
 #The face rebuilt by using compressed face and eigenfaces
 plt.subplot(2,1,2)
 rebuild_101 = np.dot(transform_each_101, components_eigen_101)
-plt.imshow(rebuild_101[sample_indx,:].reshape(64,64), cmap=plt.cm.gray, interpolation='nearest')
+plt.imshow(rebuild_101[sample_indx,:].reshape(64,64), cmap = plt.cm.gray, interpolation = 'nearest')
 
 print ('explained variance ratio when 101 eigenface is ' , sum(pca.explained_variance_ratio_))
 
@@ -198,15 +200,15 @@ transform_each_201 = pca.transform(x)
 components_eigen_201 = pca.components_
 sample_indx = 1 #np.random.randint(0,len(face.data)) 
 
-plt.suptitle("201 eigenface",size=16) 
+plt.suptitle("201 eigenface",size = 16) 
 #Ture face
 plt.subplot(2,1,1)
-plt.imshow(face.data[sample_indx,:].reshape(64,64), cmap=plt.cm.gray, interpolation='nearest')
+plt.imshow(face.data[sample_indx,:].reshape(64,64), cmap = plt.cm.gray, interpolation ='nearest')
 
 #The face rebuilt by using compressed face and eigenfaces
 plt.subplot(2,1,2)
 rebuild_201 = np.dot(transform_each_201, components_eigen_201)
-plt.imshow(rebuild_201[sample_indx,:].reshape(64,64), cmap=plt.cm.gray, interpolation='nearest')
+plt.imshow(rebuild_201[sample_indx,:].reshape(64,64), cmap = plt.cm.gray, interpolation ='nearest')
 
 print ('explained variance ratio when 201 eigenface is ' , sum(pca.explained_variance_ratio_))
 
@@ -217,32 +219,42 @@ transform_each_400 = pca.transform(x)
 components_eigen_400 = pca.components_
 sample_indx = 1 #np.random.randint(0,len(face.data)) 
 
-plt.suptitle("400 eigenface",size=16) 
+plt.suptitle("400 eigenface",size = 16) 
 #Ture face
 plt.subplot(2,1,1)
-plt.imshow(face.data[sample_indx,:].reshape(64,64), cmap=plt.cm.gray, interpolation='nearest')
+plt.imshow(face.data[sample_indx,:].reshape(64,64), cmap = plt.cm.gray, interpolation ='nearest')
 
 #The face rebuilt by using compressed face and eigenfaces
 plt.subplot(2,1,2)
 rebuild_400 = np.dot(transform_each_400, components_eigen_400)
-plt.imshow(rebuild_400[sample_indx,:].reshape(64,64), cmap=plt.cm.gray, interpolation='nearest')
+plt.imshow(rebuild_400[sample_indx,:].reshape(64,64), cmap = plt.cm.gray, interpolation ='nearest')
 
 print ('explained variance ratio when 400 eigenface is ' , sum(pca.explained_variance_ratio_))
 
-from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
-X_train,X_test,y_train,y_test=train_test_split(x,face.target,test_size = 0.2, random_state=0)
-components_pca=pd.DataFrame(columns=["n_components","knn_score"])
-for i in range(320):
-    pca=PCA(n_components=i+1,random_state=0).fit(X_train)
-    X_train_pca=pca.transform(X_train)
-    X_test_pca=pca.transform(X_test)   
-    knn=KNeighborsClassifier(n_neighbors=10)
+# image identification
+X_train,X_test,y_train,y_test = train_test_split(x, face.target, test_size = 0.2, random_state=0)
+components_pca_n = pd.DataFrame(columns=["n_components","knn_score"])
+for i in range(20):  #find the best hyperparameter for this model
+    pca = PCA(n_components = 38,random_state = 0)
+    pca.fit(X_train)
+    X_train_pca = pca.transform(X_train)
+    X_test_pca = pca.transform(X_test)   
+    knn = KNeighborsClassifier(n_neighbors = i)
     knn.fit(X_train_pca,y_train)
-    knn_predict=knn.predict(X_test_pca)
-    components_pca=components_pca.append([{"n_components":i+1,"knn_score":accuracy_score(y_test,knn_predict)}], ignore_index=True)
-plt.plot(components_pca["n_components"],components_pca["knn_score"], label = 'knn score')
+    knn_predict = knn.predict(X_test_pca)
+    components_pca_n = components_pca_n.append([{"n_components":i+1, "knn_score":accuracy_score(y_test, knn_predict)}], ignore_index=True)
+plt.plot(components_pca_n["n_components"], components_pca_n["knn_score"])
 
-components_pca[components_pca['knn_score']==components_pca['knn_score'].max()]
+components_pca = pd.DataFrame(columns=["n_components","knn_score"])
+for i in range(320):  #the size of pca cannot larger than the size of samples
+    pca = PCA(n_components = i+1,random_state = 0)
+    pca.fit(X_train)
+    X_train_pca = pca.transform(X_train)
+    X_test_pca = pca.transform(X_test)   
+    knn = KNeighborsClassifier(n_neighbors = 1)
+    knn.fit(X_train_pca,y_train)
+    knn_predict = knn.predict(X_test_pca)
+    components_pca = components_pca.append([{"n_components":i+1, "knn_score":accuracy_score(y_test, knn_predict)}], ignore_index=True)
+plt.plot(components_pca["n_components"], components_pca["knn_score"])
 
+components_pca[components_pca['knn_score'] == components_pca['knn_score'].max()]
