@@ -232,7 +232,7 @@ plt.imshow(rebuild_400[sample_indx,:].reshape(64,64), cmap = plt.cm.gray, interp
 print ('explained variance ratio when 400 eigenface is ' , sum(pca.explained_variance_ratio_))
 
 # image identification
-X_train,X_test,y_train,y_test = train_test_split(x, face.target, test_size = 0.2, random_state=0)
+X_train,X_test,y_train,y_test = train_test_split(x, face.target, test_size = 0.2, random_state=1)
 components_pca_n = pd.DataFrame(columns=["n_components","knn_score"])
 for i in range(20):  #find the best hyperparameter for this model
     pca = PCA(n_components = 38,random_state = 0)
